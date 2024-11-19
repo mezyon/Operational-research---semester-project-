@@ -1,21 +1,18 @@
-import random
+import numpy as np
 from copy import deepcopy
 
-possible_combinations = {
-    0: [1, 1, 0, 0, 0, 0, 0, 0],
-    1: [0, 0, 1, 1, 0, 0, 0, 0],
-    2: [0, 0, 0, 0, 1, 1, 0, 0],
-    3: [0, 0, 0, 0, 0, 0, 1, 1],
-    4: [0, 1, 0, 0, 0, 0, 1, 0],
-    5: [1, 0, 0, 1, 0, 0, 0, 0],
-    6: [0, 0, 1, 0, 0, 1, 0, 0],
-    7: [0, 0, 0, 0, 1, 0, 0, 1],
-    8: [0, 1, 0, 0, 0, 1, 0, 0],
-    9: [0, 0, 0, 1, 0, 0, 0, 1],
-    10: [0, 0, 1, 0, 0, 0, 1, 0],
-    11: [1, 0, 0, 0, 1, 0, 0, 0]
-}
-
+possible_combinations = {0: [1, 1, 0, 0, 0, 0, 0, 0],
+                         1: [0, 0, 1, 1, 0, 0, 0, 0],
+                         2: [0, 0, 0, 0, 1, 1, 0, 0],
+                         3: [0, 0, 0, 0, 0, 0, 1, 1],
+                         4: [0, 1, 0, 0, 0, 0, 1, 0],
+                         5: [1, 0, 0, 1, 0, 0, 0, 0],
+                         6: [0, 0, 1, 0, 0, 1, 0, 0],
+                         7: [0, 0, 0, 0, 1, 0, 0, 1],
+                         8: [0, 1, 0, 0, 0, 1, 0, 0],
+                         9: [0, 0, 0, 1, 0, 0, 0, 1],
+                        10: [0, 0, 1, 0, 0, 0, 1, 0],
+                        11: [1, 0, 0, 0, 1, 0, 0, 0]}
 
 class Simulation:
 
@@ -27,7 +24,7 @@ class Simulation:
         self.quality = None
 
     def get_random_startpoint(self):
-        random_n_vect = [random.randint(0, 20) for _ in range(9)]
+        random_n_vect = np.random.randint(0, 21, size=8).tolist()
         self.n_vect_start = random_n_vect
 
     def get_test_startpoint(self):
@@ -47,21 +44,24 @@ class Simulation:
         # getting ni list
         for i, combination_nr in enumerate(self.solution):
             # TODO: uwzględnić poprzednie ustawienie świateł (zapamiętywać numer kombinacji poprzedniej
-            #  i odejmować w poniższym wyrażeniu na n_list[i + 1] -> UTWORZYĆ zmienną prev_comb i dodać
-            #  obsługę wyjątku w pierwszej iteracji, gdzie nie było poprzedniej kombinacji świateł
+            #       i odejmować w poniższym wyrażeniu na n_list[i + 1] -> UTWORZYĆ zmienną prev_comb i dodać
+            #       obsługę wyjątku w pierwszej iteracji, gdzie nie było poprzedniej kombinacji świateł
             n_list[i + 1] = [n_list[i][j] - possible_combinations[combination_nr][j] for j in range(len(n_list[0]))]
             # n_list[i + 1] = [n_list[i][j] - possible_combinations[combination_nr][j] - possible_combinations[prev_comb][j] for j in range(len(n_list[0]))]
+            
         n_list.pop(0)
         self.ni = deepcopy(n_list)
 
         # getting T list:
         t_list = [[0, 0, 0, 0, 0, 0, 0, 0]]
+
         for i in range(len(self.solution)):
             t_list.append([t_list[i][j] + 1 for j in range(len(t_list[i]))])
             xi = possible_combinations[self.solution[i]]
             indices = [index for index, value in enumerate(xi) if value == 1]
             t_list[i + 1][indices[0]] = 0
             t_list[i + 1][indices[1]] = 0
+
         t_list.pop(0)
         self.t_list = t_list
 
@@ -72,22 +72,30 @@ class Simulation:
         self.quality = quality
         # print(n_list)
 
+def main():
+    sim = Simulation()
+    sim.get_test_startpoint()
+    sim.get_test_solution()
 
-sim = Simulation()
-sim.get_test_startpoint()
-sim.get_test_solution()
+    print(sim.n_vect_start)
+    print(sim.solution)
 
-# print(sim.n_vect_start)
-# print(sim.solution)
+    sim.calculate_solution_quality()
+    print(f"Ilość przejść: {len(sim.ni)}")
 
-sim.calculate_solution_quality()
+    print("Tablica ni:")
+    for row in sim.ni:
+        print(row)
 
-print("Ilość przejść:            ", len(sim.ni))
-print(sim.ni)
-print("Ilość kroków:             ", len(sim.solution))
-print(sim.solution)
-print("Ilość czasów oczekiwania: ", len(sim.t_list))
-print(sim.t_list)
-print(sim.quality)
+    print(f"Ilość kroków: {len(sim.solution)}")
+    print(sim.solution)
+    print(f"Ilość czasów oczekiwania: {len(sim.t_list)}")
 
+    print("Tablica t_list:")
+    for row in sim.t_list:
+        print(row)
 
+    print(f"Jakość rozwiązania: {sim.quality:.3f}")
+
+if __name__ == "__main__":
+    main()
