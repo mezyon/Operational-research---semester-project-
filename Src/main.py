@@ -1,8 +1,6 @@
 import random
 from copy import deepcopy
 
-
-
 possible_combinations = {
     0: [1, 1, 0, 0, 0, 0, 0, 0],
     1: [0, 0, 1, 1, 0, 0, 0, 0],
@@ -48,7 +46,11 @@ class Simulation:
 
         # getting ni list
         for i, combination_nr in enumerate(self.solution):
+            # TODO: uwzględnić poprzednie ustawienie świateł (zapamiętywać numer kombinacji poprzedniej
+            #  i odejmować w poniższym wyrażeniu na n_list[i + 1] -> UTWORZYĆ zmienną prev_comb i dodać
+            #  obsługę wyjątku w pierwszej iteracji, gdzie nie było poprzedniej kombinacji świateł
             n_list[i + 1] = [n_list[i][j] - possible_combinations[combination_nr][j] for j in range(len(n_list[0]))]
+            # n_list[i + 1] = [n_list[i][j] - possible_combinations[combination_nr][j] - possible_combinations[prev_comb][j] for j in range(len(n_list[0]))]
         n_list.pop(0)
         self.ni = deepcopy(n_list)
 
