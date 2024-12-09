@@ -22,13 +22,14 @@ class Simulation:
 
     def __init__(self, n_vect_start=[]):
         self.n_vect_start = n_vect_start
+        self.population = list()
         self.ni = None
         self.t_list = None
-        # self.quality = None
-        self.population = list()
+        self.best_solution_history = []
+        self.best_quality = None
 
     def get_random_startpoint(self):
-        random_n_vect = [random.randint(0, 20) for _ in range(9)]
+        random_n_vect = [random.randint(2, 5) for _ in range(9)]
         self.n_vect_start = random_n_vect
 
     def get_test_startpoint(self):
@@ -36,11 +37,13 @@ class Simulation:
 
     def get_population(self, quantity, length=12):
         self.population = [Solution(length) for _ in range(quantity)]
+        for el in self.population:
+            el.randomize()
 
     def calculate_solution_quality(self, solution):
         a_ = 0.2
         b_ = 0.3
-        c_ = 30
+        c_ = inf
         quality = 0
         N = deepcopy(self.n_vect_start)
         n_matrix = [[] for _ in range(len(solution.solution) + 1)]
@@ -90,46 +93,103 @@ class Simulation:
                 break
             quality += 1 + a_ * sum([n_matrix[i][j] * t_list[i][j] for j in range(len(n_matrix[i]))])
 
-        quality += sum(n_matrix[-1]) * c_
+        # print(n_matrix[-1])
+
+        if sum(n_matrix[-1]) != 0:
+            quality += sum(n_matrix[-1]) * c_
 
         solution.quality = quality
         # print(n_list)
+
+    def genetic_algorithm(self, quantity=100, length=7, iterations=100):
+        # stwórz pierwszą populację
+        self.get_population(quantity, length)
+        counter = 0
+        while counter < iterations:
+            counter += 1
+
+            # oblicz jakość w populacji
+            for one_sol in self.population:
+                self.calculate_solution_quality(one_sol)
+
+            if len(self.population) > quantity:
+                self.population = self.population[:quantity]
+
+            # posortuj rozwiązania względem jakości
+            self.population.sort(key=lambda x: x.quality, reverse=False)
+
+            self.best_solution_history.append(self.population[0].quality)
+
+            TOP_25 = deepcopy(self.population[:quantity//4])
+
+            crossing = []
+            for el in TOP_25:
+                for _ in range(2): # wykonaj dwa razy
+                    one, two = el.crossing(random.choice(TOP_25))
+                    crossing.append(one)
+                    crossing.append(two)
+
+            # 1/4 ilości populacji razy wykonaj mutacje
+            for _ in range(quantity//4):
+                idx = random.randint(0, len(crossing) - 1)
+                crossing[idx].mutation(random.choice([0, 1]))
+                idx = random.randint(0, len(crossing) - 1)
+                crossing[idx].permutation(random.choice([0, 1]))
+
+            self.population = crossing
+
+        for one_sol in self.population:
+            self.calculate_solution_quality(one_sol)
+
+        # posortuj rozwiązania względem jakości
+        self.population.sort(key=lambda x: x.quality, reverse=False)
+
+        for el in self.population[:5]:
+            print(el.quality)
 
 
 class Solution:
 
     def __init__(self, length=12):
-        self.solution = [random.randint(0, 11) for _ in range(length)]
-        self.quality = inf
+        # Długość pojedynczego rozwiązania powinna wynosić sumę wszystkich
+        # jendostek samochodowych na początku przez 2 -> wówczas na pewno
+        # będzie istaniało rozwiązanie, które umożliwy przejazd wszystkim pojazdom
+        self.solution = [None for _ in range(length)]  # lista do przechowywania roziązania
+        self.quality = 999999999  # duża i charakterystyczna liczba, ale nie nieskończoność dla lepszej diagnostyki
+        self.length = length
+
+    def randomize(self):
+        self.solution = [random.randint(0, 11) for _ in range(len(self.solution))]
 
     def make_it_test_solution(self):
         self.solution = [11, 11, 10, 10, 9, 8]
 
-    def permutation(self, type=0):
+    def permutation(self, typ=0):
         """
         Metoda dokonująca permutacji w obrębie jednego rozwiązania
-        :param type: w zależności od typu:
+        :param typ: w zależności od typu:
         0) losuje dwie liczby a, b i podmienia wartości na tych indeksach
         1) losuje dwie liczby a, b i w tym zakresie odwraca kolejność
         ... można chyba do woli tworzyć możliwe permutacje
         :return: nic nie zwraca, modyfikuje to rozwiązanie
         """
-        length = len(self.solution)
 
-        if type == 0:
-            a = random.randint(0, length)
-            b = random.randint(0, length)
-            self.solution[a], self.solution[b] = self.solution[b], self.solution[a]
+        if typ == 0:
+            a = random.randint(0, self.length - 1)
+            b = random.randint(0, self.length - 1)
+            x = self.solution[a]
+            self.solution[a] = self.solution[b]
+            self.solution[b] = x
 
-        if type == 1:
-            a = random.randint(0, length)
-            b = random.randint(0, length)
+        if typ == 1:
+            a = random.randint(0, self.length)
+            b = random.randint(0, self.length)
             if a > b:
                 a, b = b, a
 
-            self.solution[a:b] = self.solution[a:b:-1]
+            self.solution[a:b] = self.solution[a:b][::-1]
 
-    def mutation(self, type=0):
+    def mutation(self, typ=0):
         """
         Metoda mutująca
         0) jedna podmianka
@@ -137,38 +197,39 @@ class Solution:
         :return: podmienia w rozwiązaniu wartości na określonych indeksach na inne losowe
         """
         length = len(self.solution)
-        if type == 0:
-            idx = random.randint(0, length)
+        if typ == 0:
+            idx = random.randint(0, length - 1)
             self.solution[idx] = random.randint(0, 11)  # bo 11 jest kombinacji świateł jak coś
-        if type == 1:
+        if typ == 1:
             number_of_changes = length // 4
             for _ in range(number_of_changes):
-                idx = random.randint(0, length)
+                idx = random.randint(0, length - 1)
                 self.solution[idx] = random.randint(0, 11)
 
+    def crossing(self, other, typ=0):
+        """
+        metoda krzyżująca, przyjmuje inne rozwiązanie i krzyżuje je z tym
+        :param other: inne rozwiązanie
+        :return: (new_sol1, new_sol2)
+        """
+        new_sol1 = Solution(self.length)
+        new_sol2 = Solution(self.length)
+
+        if typ == 0:
+            bound = random.randint(1, self.length - 1)
+            new_sol1.solution = self.solution[:bound] + other.solution[bound:]
+            new_sol2.solution = other.solution[:bound] + self.solution[bound:]
+
+        return new_sol1, new_sol2
 
 
 if __name__ == '__main__':
+
+    test_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
+
     sim = Simulation()
-    sim.get_random_startpoint()
-    sim.get_population(100, 15)
+    sim.n_vect_start = deepcopy([2, 5, 2, 2, 4, 4, 2, 2, 2])
 
-    # for i in range(8):
-    #     print(i)
-    #
-    # print("\n\n")
-
-    # for sol in sim.population:
-    #     print(sol.solution)
-
-    best_sol = None
-    best_quality = inf
-
-    for sol in sim.population:
-        sim.calculate_solution_quality(sol)
-        if sol.quality < best_quality:
-            best_sol = sol
-            best_quality = sol.quality
-
-print(best_sol.solution)
-print(best_sol.quality)
+    sim.genetic_algorithm(100, 12)
+    print(sim.best_solution_history)
+    print(min(sim.best_solution_history))
