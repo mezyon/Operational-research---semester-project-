@@ -237,7 +237,7 @@ if __name__ == '__main__':
     test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
     sim = Simulation()
     sim.n_vect_start = test1_start
-    sim.genetic_algorithm(100, 12, 100)
+    sim.genetic_algorithm(100, 12, 40)
     data_test1 = sim.best_solution_history
 
     sim = Simulation()
@@ -247,18 +247,40 @@ if __name__ == '__main__':
     dlugosc_rozwiazania = sum(start) // 4
     print("Długość rozwiązania", dlugosc_rozwiazania)
 
-    sim.genetic_algorithm(100, dlugosc_rozwiazania, 100)
+    sim.genetic_algorithm(100, dlugosc_rozwiazania, 40)
 
     data_test2 = sim.best_solution_history
 
-    # plt.plot(range(len(data_test1)), data_test1)
-    # plt.title(f"{test1_start}, rozwiązanie dł. 12")
-    # plt.xlabel("Iteracja")
-    # plt.ylabel("Wartość Funkcji celu")
-    # plt.grid()
-    # plt.show()
+    plt.plot(range(len(data_test1)), data_test1)
+    plt.title(f"{test1_start}, rozwiązanie dł. 12")
+    plt.xlabel("Iteracja")
+    plt.ylabel("Wartość Funkcji celu")
+    plt.grid()
+    plt.show()
 
     plt.plot(range(len(data_test2)), data_test2)
+    plt.title(f"{start}, rozwiązanie dł. {dlugosc_rozwiazania}")
+    plt.xlabel("Iteracja")
+    plt.ylabel("Wartość Funkcji celu")
+    plt.grid()
+    plt.show()
+
+    test3_start = [0, 0, 0, 0, 80, 0, 0, 0, 0]
+
+    sim = Simulation()
+    sim.n_vect_start = test3_start
+    start = sim.n_vect_start
+    print("pozycja początkowa:", start)
+    dlugosc_rozwiazania = sum(start) // 4
+    print("Długość rozwiązania", dlugosc_rozwiazania)
+
+    sim.genetic_algorithm(100, dlugosc_rozwiazania, 40)
+
+    data_test3 = sim.best_solution_history
+
+    print(sim.population[0].solution)
+
+    plt.plot(range(len(data_test3)), data_test3)
     plt.title(f"{start}, rozwiązanie dł. {dlugosc_rozwiazania}")
     plt.xlabel("Iteracja")
     plt.ylabel("Wartość Funkcji celu")
