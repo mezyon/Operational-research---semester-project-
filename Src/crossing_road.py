@@ -1,6 +1,7 @@
 import random
 from copy import deepcopy
 from math import inf
+import matplotlib.pyplot as plt
 
 possible_combinations = {
     0: [1, 1, 0, 0, 0, 0, 0, 0],
@@ -26,10 +27,10 @@ class Simulation:
         self.ni = None
         self.t_list = None
         self.best_solution_history = []
-        self.best_quality = None
+        self.best_quality = 9999999999999999999999999999
 
-    def get_random_startpoint(self):
-        random_n_vect = [random.randint(2, 5) for _ in range(9)]
+    def get_random_startpoint(self, a=2, b=5):
+        random_n_vect = [random.randint(a, b) for _ in range(9)]
         self.n_vect_start = random_n_vect
 
     def get_test_startpoint(self):
@@ -41,9 +42,10 @@ class Simulation:
             el.randomize()
 
     def calculate_solution_quality(self, solution):
+        base_value = 3
         a_ = 0.2
         b_ = 0.3
-        c_ = inf
+        c_ = 5
         quality = 0
         N = deepcopy(self.n_vect_start)
         n_matrix = [[] for _ in range(len(solution.solution) + 1)]
@@ -91,7 +93,7 @@ class Simulation:
         for i in range(len(n_matrix)):
             if sum(n_matrix[i]) == 0:
                 break
-            quality += 1 + a_ * sum([n_matrix[i][j] * t_list[i][j] for j in range(len(n_matrix[i]))])
+            quality += base_value + a_ * sum([n_matrix[i][j] * t_list[i][j] for j in range(len(n_matrix[i]))]) ** b_
 
         # print(n_matrix[-1])
 
@@ -117,8 +119,10 @@ class Simulation:
 
             # posortuj rozwiązania względem jakości
             self.population.sort(key=lambda x: x.quality, reverse=False)
-
-            self.best_solution_history.append(self.population[0].quality)
+            try:
+                self.best_solution_history.append(self.population[0].quality if self.population[0].quality < self.best_solution_history[-1] else self.best_solution_history[-1])
+            except IndexError:
+                self.best_solution_history.append(self.population[0].quality)
 
             TOP_25 = deepcopy(self.population[:quantity//4])
 
@@ -144,8 +148,8 @@ class Simulation:
         # posortuj rozwiązania względem jakości
         self.population.sort(key=lambda x: x.quality, reverse=False)
 
-        for el in self.population[:5]:
-            print(el.quality)
+        # for el in self.population[:5]:
+        #     print(el.quality)
 
 
 class Solution:
@@ -224,12 +228,39 @@ class Solution:
 
 
 if __name__ == '__main__':
+    # Algorytm wykonuje pełną ilość iteracji i dopiero kończy,
+    # nie ma jeszcze zaimplementowanych dodatkowych warunków stopu takich jak:
+    # * uzyskanie wystarczająco dobrego rozwiązania
+    # * brak polepszenia funkcji celu przez daną ilość iteracji
+    # * wykonywanie algorytmu przez określoną ilość czasu
 
-    test_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
+    test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
+    sim = Simulation()
+    sim.n_vect_start = test1_start
+    sim.genetic_algorithm(100, 12, 100)
+    data_test1 = sim.best_solution_history
 
     sim = Simulation()
-    sim.n_vect_start = deepcopy([2, 5, 2, 2, 4, 4, 2, 2, 2])
+    sim.get_random_startpoint(6, 12)
+    start = sim.n_vect_start
+    print("pozycja początkowa:", start)
+    dlugosc_rozwiazania = sum(start) // 4
+    print("Długość rozwiązania", dlugosc_rozwiazania)
 
-    sim.genetic_algorithm(100, 12)
-    print(sim.best_solution_history)
-    print(min(sim.best_solution_history))
+    sim.genetic_algorithm(100, dlugosc_rozwiazania, 100)
+
+    data_test2 = sim.best_solution_history
+
+    # plt.plot(range(len(data_test1)), data_test1)
+    # plt.title(f"{test1_start}, rozwiązanie dł. 12")
+    # plt.xlabel("Iteracja")
+    # plt.ylabel("Wartość Funkcji celu")
+    # plt.grid()
+    # plt.show()
+
+    plt.plot(range(len(data_test2)), data_test2)
+    plt.title(f"{start}, rozwiązanie dł. {dlugosc_rozwiazania}")
+    plt.xlabel("Iteracja")
+    plt.ylabel("Wartość Funkcji celu")
+    plt.grid()
+    plt.show()
