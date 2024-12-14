@@ -23,11 +23,11 @@ possible_combinations = {
 # nie można zrezygnować z operatora krzyżowania
 mut_opt = [0, 1]
 perm_opt = [0, 1]
-cros_opt = [0, 1]
+cros_opt = [0,  1]
 
 # współczynniki do liczenia funkcji celu
-base_glob = 1   # dodawane w każdym kroku
-a_glob = 3    # mnożnik kary
+base_glob = 0   # dodawane w każdym kroku
+a_glob = 1    # mnożnik kary
 b_glob = 1    # wykładnik kary
 c_glob = 1      # kara za pozostałe auta
 
@@ -131,7 +131,9 @@ class Simulation:
         solution.quality = quality
         # print(n_list)
 
-    def genetic_algorithm(self, quantity=100, length=7, iterations=100, desired_solution=0, MUT_=mut_probability, PERM_=perm_probability, add_random_5_inside=add_random_5, dummy=0):
+    def genetic_algorithm(self, quantity=100, length=7, iterations=100, desired_solution=0,
+                          MUT_=mut_probability, PERM_=perm_probability, add_random_5_inside=add_random_5,
+                          dummy=0, karanie=False):
 
 
         # stwórz pierwszą populację
@@ -145,11 +147,16 @@ class Simulation:
             for one_sol in self.population:
                 self.calculate_solution_quality(one_sol)
 
+            if karanie:
+                for solution in self.population:
+                    solution.pokaraj()
+
+            # posortuj rozwiązania względem jakości
+            self.population.sort(key=lambda x: (x.quality + x.kara), reverse=False)
+
             if len(self.population) > quantity:
                 self.population = self.population[:quantity]
 
-            # posortuj rozwiązania względem jakości
-            self.population.sort(key=lambda x: x.quality, reverse=False)
             # aktualizacja listy do tej pory najlepszego rozwiąznia
             try:
                 self.best_solution_history.append(self.population[0].quality if self.population[0].quality < self.best_solution_history[-1] else self.best_solution_history[-1])
@@ -191,6 +198,8 @@ class Simulation:
                 if desired_solution > self.best_solution_history[-1]:
                     improvement_flag = False
 
+
+
         for one_sol in self.population:
             self.calculate_solution_quality(one_sol)
 
@@ -207,6 +216,30 @@ class Solution:
         self.solution = [None for _ in range(length)]  # lista do przechowywania roziązania
         self.quality = 999999999  # duża i charakterystyczna liczba, ale nie nieskończoność dla lepszej diagnostyki
         self.length = length
+        self.kara = 0
+
+    def pokaraj(self):
+        tab = self.solution  # Tablica zawierająca sekwencję rozwiązań.
+        kara = 0  # Inicjalizacja wartości kary.
+
+        for i in range(len(tab) - 1):  # Iteracja po parach sąsiednich elementów w tablicy.
+            current = possible_combinations[tab[i]]  # Obecna kombinacja.
+            next_comb = possible_combinations[tab[i + 1]]  # Następna kombinacja.
+
+            if current == next_comb:  # Jeśli kombinacje są identyczne.
+                continue  # Brak kary.
+
+            # Obliczamy liczbę zgodnych indeksów między dwiema kombinacjami.
+            matching_indices = sum(1 for c, n in zip(current, next_comb) if c == n and c == 1)
+
+            if matching_indices == 0:  # Jeśli żaden indeks się nie zgadza.
+                kara += 5  # Kara za brak zgodności (ustaw wartość X według potrzeb).
+            elif matching_indices == 1:  # Jeśli dokładnie jeden indeks się zgadza.
+                kara += 1  # Kara za częściową zgodność (ustaw wartość Y według potrzeb).
+            else:  # Więcej niż jeden indeks się zgadza (ale kombinacje nie są identyczne).
+                pass  # Opcjonalna kara za większą zgodność, jeśli potrzebne.
+
+        self.kara = kara  # dodanie kary
 
     def dummy(self):
         self.solution = [0 for _ in range(len(self.solution))]
@@ -292,7 +325,8 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
                               mut=mut_probability,
                               perm=perm_probability,
                               add=add_random_5,
-                              dummy=0):
+                              dummy=0,
+                              karanie=False):
     """
 
     :param wektor_poczatkowy: sytuacja na skrzyżowaniu do rozważenia
@@ -322,7 +356,7 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
     print("pozycja początkowa:", symulka.n_vect_start)
     print("Długość rozwiązania", dlugosc_rozwiazania)
 
-    symulka.genetic_algorithm(rozmiar_populacji, dlugosc_rozwiazania, liczba_iteracji, wartosc_progowa, mut, perm, add, dummy)
+    symulka.genetic_algorithm(rozmiar_populacji, dlugosc_rozwiazania, liczba_iteracji, wartosc_progowa, mut, perm, add, dummy, karanie)
 
     przebieg_najlepszej_f_celu = symulka.best_solution_history
     przebieg_f_celu = symulka.best_solution_in_population
@@ -351,15 +385,16 @@ if __name__ == '__main__':
 
     test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
 
-    test3_start = [0, 0, 0, 40, 40, 0, 0, 0, 0]
+    test3_start = [40, 40, 0, 0, 0, 0, 0, 0, 0]
     przeprowadzenie_symulacji(wektor_poczatkowy=None,
-                              dlugosc_rozwiazania=20,
+                              dlugosc_rozwiazania=None,
                               rozmiar_populacji=100,
                               liczba_iteracji=1000,
                               wartosc_progowa=0,
-                              a=18,
-                              b=35,
-                              mut=0.3,
-                              perm=0.3,
-                              add=False,
-                              dummy=0)
+                              a=12,
+                              b=24,
+                              mut=0.35,
+                              perm=0.35,
+                              add=True,
+                              dummy=0,
+                              karanie=False)
