@@ -59,7 +59,7 @@ class Simulation:
         self.n_vect_start = [2, 1, 2, 1, 2, 1, 2, 1]
 
     def get_population(self, quantity, length=12, dummy=0):
-        self.population = [Solution(length) for _ in range(quantity)]
+        self.population = [Solution(int(length)) for _ in range(quantity)]
         if dummy == 1:
             for el in self.population:
                 el.dummy()
@@ -355,14 +355,15 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
         # ustalić (optymalną) długość rozwiązania
         dlugosc_rozwiazania = sum(symulka.n_vect_start) // 4
 
-    print("pozycja początkowa:", symulka.n_vect_start)
-    print("Długość rozwiązania", dlugosc_rozwiazania)
+    #print("pozycja początkowa:", symulka.n_vect_start)
+    #print("Długość rozwiązania", dlugosc_rozwiazania)
 
     symulka.genetic_algorithm(rozmiar_populacji, dlugosc_rozwiazania, liczba_iteracji, wartosc_progowa, mut, perm, add, dummy, karanie, no_improvement)
 
     przebieg_najlepszej_f_celu = symulka.best_solution_history
     przebieg_f_celu = symulka.best_solution_in_population
     przebieg_nadmiaru = symulka.best_solution_nadmiar_history
+    """
     print("Funkcja celu najlepszego rozwiąznia", min(przebieg_najlepszej_f_celu))
     print("Najlepsze rozwiązanie:", symulka.population[0].solution)
 
@@ -390,8 +391,10 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
     plt.ylabel("Wartość nadmiaru")
     plt.grid()
     plt.show()
+    """
+    return symulka.n_vect_start, symulka.population[0].solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania
 
-
+"""
 if __name__ == '__main__':
 
     test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
@@ -411,3 +414,5 @@ if __name__ == '__main__':
                               add=False,
                               dummy=0,
                               karanie=True)
+
+    """
