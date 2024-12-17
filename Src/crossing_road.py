@@ -19,11 +19,7 @@ possible_combinations = {
     11: [1, 0, 0, 0, 1, 0, 0, 0]
 }
 
-# lista opcji transformacji - w obecnej implementacji można ją zmieniać na [0], [1] oraz [0, 1]
-# nie można zrezygnować z operatora krzyżowania
-mut_opt = [0, 1]
-perm_opt = [0, 1]
-cros_opt = [0,  1]
+# ZMIENNE GLOBALNE START
 
 # współczynniki do liczenia funkcji celu
 base_glob = 0   # dodawane w każdym kroku
@@ -31,15 +27,14 @@ a_glob = 1    # mnożnik kary
 b_glob = 1    # wykładnik kary
 c_glob = 1      # kara za pozostałe auta
 
-# prawdopodobieństwo wystąpienia mutacji (i permutacji)
-mut_probability = 0.5
-perm_probability = mut_probability
 
-# dodanie pięciu losowych rozwiązań do listy utworzonej z krzyżowania
-add_random_5 = True
+# lista opcji transformacji - w obecnej implementacji można ją zmieniać na [0], [1] oraz [0, 1]
+# nie można zrezygnować z operatora krzyżowania
+mut_opt = [0, 1]
+perm_opt = [0, 1]
+cros_opt = [0,  1]
 
-# liczba itearcji bez poprawy do warunku stopu
-no_improvement = 40
+# ZMIENNE GLOBALNE STOP
 
 
 class Simulation:
@@ -132,8 +127,8 @@ class Simulation:
         # print(n_list)
 
     def genetic_algorithm(self, quantity=100, length=7, iterations=100, desired_solution=0,
-                          MUT_=mut_probability, PERM_=perm_probability, add_random_5_inside=add_random_5,
-                          dummy=0, karanie=False):
+                          MUT_=0.5, PERM_=0.5, add_random_5_inside=True,
+                          dummy=0, karanie=False, no_improvement=100):
 
 
         # stwórz pierwszą populację
@@ -233,9 +228,9 @@ class Solution:
             matching_indices = sum(1 for c, n in zip(current, next_comb) if c == n and c == 1)
 
             if matching_indices == 0:  # Jeśli żaden indeks się nie zgadza.
-                kara += 5  # Kara za brak zgodności (ustaw wartość X według potrzeb).
+                kara += 10  # Kara za brak zgodności (ustaw wartość X według potrzeb).
             elif matching_indices == 1:  # Jeśli dokładnie jeden indeks się zgadza.
-                kara += 1  # Kara za częściową zgodność (ustaw wartość Y według potrzeb).
+                kara += 0  # Kara za częściową zgodność (ustaw wartość Y według potrzeb).
             else:  # Więcej niż jeden indeks się zgadza (ale kombinacje nie są identyczne).
                 pass  # Opcjonalna kara za większą zgodność, jeśli potrzebne.
 
@@ -322,11 +317,12 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
                               wartosc_progowa=0,
                               a=2,
                               b=5,
-                              mut=mut_probability,
-                              perm=perm_probability,
-                              add=add_random_5,
+                              mut=0.5,
+                              perm=0.5,
+                              add=True,
                               dummy=0,
-                              karanie=False):
+                              karanie=False,
+                              no_improvement=100):
     """
 
     :param wektor_poczatkowy: sytuacja na skrzyżowaniu do rozważenia
@@ -356,7 +352,7 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
     print("pozycja początkowa:", symulka.n_vect_start)
     print("Długość rozwiązania", dlugosc_rozwiazania)
 
-    symulka.genetic_algorithm(rozmiar_populacji, dlugosc_rozwiazania, liczba_iteracji, wartosc_progowa, mut, perm, add, dummy, karanie)
+    symulka.genetic_algorithm(rozmiar_populacji, dlugosc_rozwiazania, liczba_iteracji, wartosc_progowa, mut, perm, add, dummy, karanie, no_improvement)
 
     przebieg_najlepszej_f_celu = symulka.best_solution_history
     przebieg_f_celu = symulka.best_solution_in_population
@@ -386,15 +382,17 @@ if __name__ == '__main__':
     test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
 
     test3_start = [40, 40, 0, 0, 0, 0, 0, 0, 0]
-    przeprowadzenie_symulacji(wektor_poczatkowy=None,
+    testing_v = [13, 20, 21, 17, 18, 13, 14, 24, 15]
+    len_t = 38
+    przeprowadzenie_symulacji(wektor_poczatkowy=testing_v,
                               dlugosc_rozwiazania=None,
-                              rozmiar_populacji=100,
+                              rozmiar_populacji=50,
                               liczba_iteracji=1000,
                               wartosc_progowa=0,
                               a=12,
                               b=24,
-                              mut=0.35,
-                              perm=0.35,
-                              add=True,
+                              mut=0.5,
+                              perm=0.5,
+                              add=False,
                               dummy=0,
-                              karanie=False)
+                              karanie=True)
