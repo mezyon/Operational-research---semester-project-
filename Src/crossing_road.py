@@ -34,6 +34,8 @@ mut_opt = [0, 1]
 perm_opt = [0, 1]
 cros_opt = [0,  1]
 
+KARA_FULL = 10
+KARA_HALF = 5
 # ZMIENNE GLOBALNE STOP
 
 
@@ -44,6 +46,7 @@ class Simulation:
         self.population = list()
         self.ni = None
         self.t_list = None
+        self.best_solution_nadmiar_history = []
         self.best_solution_history = []
         self.best_solution_in_population = []
         self.best_quality = 9999999999999999999999999999
@@ -123,6 +126,8 @@ class Simulation:
         if sum(n_matrix[-1]) != 0:
             quality += sum(n_matrix[-1]) * c_
 
+        zostalo_aut = sum(n_matrix[-1])
+        solution.nadmiar = zostalo_aut
         solution.quality = quality
         # print(n_list)
 
@@ -160,6 +165,8 @@ class Simulation:
             # aktualizacja listy najlepszego rozwiązania w obecnej populacji
             self.best_solution_in_population.append(self.population[0].quality)
 
+            self.best_solution_nadmiar_history.append(self.population[0].nadmiar)
+
             # wybierz jakościowo najlepsze 25% populacji do krosowania
             crossing_population = deepcopy(self.population[:quantity//4])
 
@@ -193,8 +200,6 @@ class Simulation:
                 if desired_solution > self.best_solution_history[-1]:
                     improvement_flag = False
 
-
-
         for one_sol in self.population:
             self.calculate_solution_quality(one_sol)
 
@@ -212,6 +217,7 @@ class Solution:
         self.quality = 999999999  # duża i charakterystyczna liczba, ale nie nieskończoność dla lepszej diagnostyki
         self.length = length
         self.kara = 0
+        self.nadmiar = -1
 
     def pokaraj(self):
         tab = self.solution  # Tablica zawierająca sekwencję rozwiązań.
@@ -228,9 +234,9 @@ class Solution:
             matching_indices = sum(1 for c, n in zip(current, next_comb) if c == n and c == 1)
 
             if matching_indices == 0:  # Jeśli żaden indeks się nie zgadza.
-                kara += 10  # Kara za brak zgodności (ustaw wartość X według potrzeb).
+                kara += KARA_FULL  # Kara za brak zgodności (ustaw wartość X według potrzeb).
             elif matching_indices == 1:  # Jeśli dokładnie jeden indeks się zgadza.
-                kara += 0  # Kara za częściową zgodność (ustaw wartość Y według potrzeb).
+                kara += KARA_HALF  # Kara za częściową zgodność (ustaw wartość Y według potrzeb).
             else:  # Więcej niż jeden indeks się zgadza (ale kombinacje nie są identyczne).
                 pass  # Opcjonalna kara za większą zgodność, jeśli potrzebne.
 
@@ -356,6 +362,7 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
 
     przebieg_najlepszej_f_celu = symulka.best_solution_history
     przebieg_f_celu = symulka.best_solution_in_population
+    przebieg_nadmiaru = symulka.best_solution_nadmiar_history
     print("Funkcja celu najlepszego rozwiąznia", min(przebieg_najlepszej_f_celu))
     print("Najlepsze rozwiązanie:", symulka.population[0].solution)
 
@@ -373,6 +380,14 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
     plt.title(f"{symulka.n_vect_start}, rozwiązanie dł. {dlugosc_rozwiazania}")
     plt.xlabel("Iteracja")
     plt.ylabel("Wartość Funkcji celu")
+    plt.grid()
+    plt.show()
+
+    # WYKRES NADMIARU
+    plt.plot(range(len(przebieg_nadmiaru)), przebieg_nadmiaru)
+    plt.title(f"{symulka.n_vect_start}, rozwiązanie dł. {dlugosc_rozwiazania}")
+    plt.xlabel("Iteracja")
+    plt.ylabel("Wartość nadmiaru")
     plt.grid()
     plt.show()
 
