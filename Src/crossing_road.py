@@ -167,7 +167,7 @@ class Simulation:
 
             self.best_solution_nadmiar_history.append(self.population[0].nadmiar)
 
-            # wybierz jakościowo najlepsze 25% populacji do krosowania
+            # wybierz jakościowo najlepsze 25% populacji do krzyżowania
             crossing_population = deepcopy(self.population[:quantity//4])
 
             # dodaj pięć losowych rozwiązań
@@ -394,12 +394,12 @@ def przeprowadzenie_symulacji(wektor_poczatkowy=None,
 
 if __name__ == '__main__':
 
-    test1_start = [2, 5, 2, 2, 4, 4, 2, 2, 2]
+    test1_start = [2, 5, 2, 2, 4, 4, 2, 2]
 
-    test3_start = [40, 40, 0, 0, 0, 0, 0, 0, 0]
-    testing_v = [13, 20, 21, 17, 18, 13, 14, 24, 15]
+    test3_start = [40, 40, 0, 0, 0, 0, 0, 0]
+    testing_v = [13, 20, 21, 17, 18, 13, 14, 24]
     len_t = 38
-    przeprowadzenie_symulacji(wektor_poczatkowy=testing_v,
+    przeprowadzenie_symulacji(wektor_poczatkowy=test3_start,
                               dlugosc_rozwiazania=None,
                               rozmiar_populacji=50,
                               liczba_iteracji=1000,
