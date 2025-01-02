@@ -52,7 +52,7 @@ class Simulation:
         self.best_quality = 9999999999999999999999999999
 
     def get_random_startpoint(self, a=2, b=5):
-        random_n_vect = [random.randint(a, b) for _ in range(9)]
+        random_n_vect = [random.randint(a, b) for _ in range(8)]
         self.n_vect_start = random_n_vect
 
     def get_test_startpoint(self):
@@ -399,7 +399,7 @@ if __name__ == '__main__':
     test3_start = [40, 40, 0, 0, 0, 0, 0, 0]
     testing_v = [13, 20, 21, 17, 18, 13, 14, 24]
     len_t = 38
-    przeprowadzenie_symulacji(wektor_poczatkowy=test3_start,
+    przeprowadzenie_symulacji(wektor_poczatkowy=None,
                               dlugosc_rozwiazania=None,
                               rozmiar_populacji=50,
                               liczba_iteracji=1000,
