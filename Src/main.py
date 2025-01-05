@@ -1,189 +1,299 @@
-from crossing_road import przeprowadzenie_symulacji
-
-import sys
-
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QComboBox, QRadioButton, QButtonGroup, QCheckBox, QFrame
+    QLineEdit, QPushButton, QComboBox, QRadioButton, QButtonGroup, QCheckBox, 
+    QFrame, QGridLayout, QScrollArea, QGroupBox, QSpinBox, QDoubleSpinBox,
+    QSlider
 )
-
+from PySide6.QtCore import Qt
 from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.figure import Figure
+import seaborn as sns
+import sys
+
+from crossing_road import przeprowadzenie_symulacji
+
+class SliderWithInput(QWidget):
+    def __init__(self, minimum, maximum, decimals=1):
+        super().__init__()
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+        
+        # Slider
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(int(minimum * 10**decimals))
+        self.slider.setMaximum(int(maximum * 10**decimals))
+        
+        # Spin box
+        self.spinbox = QDoubleSpinBox()
+        self.spinbox.setRange(minimum, maximum)
+        self.spinbox.setDecimals(decimals)
+        self.spinbox.setSingleStep(0.1)
+        
+        # Connect signals
+        self.slider.valueChanged.connect(
+            lambda: self.spinbox.setValue(self.slider.value() / 10**decimals))
+        self.spinbox.valueChanged.connect(
+            lambda: self.slider.setValue(int(self.spinbox.value() * 10**decimals)))
+        
+        layout.addWidget(self.slider, stretch=7)
+        layout.addWidget(self.spinbox, stretch=3)
+        
+    def value(self):
+        return self.spinbox.value()
+        
+    def setValue(self, value):
+        self.spinbox.setValue(value)
+
+class InputGroup(QGroupBox):
+    def __init__(self, title):
+        super().__init__(title)
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        self.row = 0
+
+    def add_input(self, label_text, widget, tooltip=""):
+        label = QLabel(label_text)
+        if tooltip:
+            label.setToolTip(tooltip)
+            widget.setToolTip(tooltip)
+        self.layout.addWidget(label, self.row, 0)
+        self.layout.addWidget(widget, self.row, 1)
+        self.row += 1
+        return widget
 
 class GraphApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Graph with List Input")
-        self.setGeometry(100, 100, 1600, 600)
+        self.setWindowTitle("Wizualizacja algorytmu genetycznego")
+        self.setGeometry(100, 100, 1800, 900)
 
+        # Create main widget with scroll support
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         main_layout = QVBoxLayout()
         main_widget.setLayout(main_layout)
 
-        input_wektor_layout = QHBoxLayout()
-        input_layout = QHBoxLayout()
-        input_layout2 = QHBoxLayout()
+        # Create a horizontal layout for input panels
+        input_panels_layout = QHBoxLayout()
 
-        wektor_label = QLabel("9 elementowy wektor początkowy:")
-        self.wektor_poczatkowy = QLineEdit()
-        self.wektor_poczatkowy.setPlaceholderText("np. 13, 20, 21, 17, 18, 13, 14, 24, 15")
-        self.wektor_poczatkowy.setText("13, 20, 21, 17, 18, 13, 14, 24, 15")
-
-        populacja_label = QLabel("Rozmiar populacji:")
-        self.populacja = QLineEdit()
-        self.populacja.setPlaceholderText("np. 50")
-        self.populacja.setText("50")
-
-        iteracje_label = QLabel("Liczba iteracji:")
-        self.iteracje = QLineEdit()
-        self.iteracje.setPlaceholderText("np. 1000")
-        self.iteracje.setText("1000")
-
-        progowa_label = QLabel("Wartość progowa:")
-        self.wartosc_progowa = QLineEdit()
-        self.wartosc_progowa.setText("0")
-
-        mutacja_label = QLabel("Prawdopodobieństwo mutacji:")
-        self.mutacja = QLineEdit()
-        self.mutacja.setText("0.5")
+        # Initial Vector Input Group
+        vector_group = InputGroup("Warunki początkowe")
+        self.wektor_poczatkowy = vector_group.add_input(
+            "Wektor początkowy (8 elementów):",
+            QLineEdit("13, 20, 21, 17, 18, 13, 14, 24"),
+            "Wprowadź 8 liczb oddzielonych przecinkami"
+        )
         
-        permutacja_label = QLabel("Prawdopodobieństwo permutacji:")
-        self.permutacja = QLineEdit()
-        self.permutacja.setText("0.5")
+        # losowy wektor początkowy
+        self.random_wektor_checkbox = vector_group.add_input(
+            "Losowy wektor początkowy",
+            QCheckBox("blokuj")
+        )
+        self.random_wektor_checkbox.stateChanged.connect(
+            lambda state: self.wektor_poczatkowy.setEnabled(not state)
+        )
+        # TODO jedna uniwersalna funkcja?
+        self.random_wektor_checkbox.stateChanged.connect(
+            lambda state: self.random_wektor_min.setEnabled(state)
+        )
+        
+        self.random_wektor_min = vector_group.add_input(
+            "Min",
+            QSpinBox(),
+            "xx"
+        )
+        self.random_wektor_min.setRange(0,20)
+        self.random_wektor_min.setValue(4)
+        self.random_wektor_min.setEnabled(False)
+        
+        self.random_wektor_max = vector_group.add_input(
+            "Max",
+            QSpinBox(),
+            "xx"
+        )
+        self.random_wektor_max.setRange(0,20)
+        self.random_wektor_max.setValue(12)
+        self.random_wektor_max.setEnabled(False)
 
+        # Algorithm Parameters Group
+        algo_group = InputGroup("Parametry algorytmu")
+        self.populacja = algo_group.add_input(
+            "Rozmiar populacji:",
+            QSpinBox(),
+            "Wielkość populacji w algorytmie genetycznym"
+        )
+        self.populacja.setRange(10, 1000)
+        self.populacja.setValue(50)
+        
+        new_param = algo_group.add_input(
+        "New Parameter:",
+        QLineEdit(),
+        "Description of the parameter"
+        )
+        
+        self.iteracje = algo_group.add_input(
+            "Liczba iteracji:",
+            QSpinBox(),
+            "Liczba iteracji do wykonania"
+        )
+        self.iteracje.setRange(100, 10000)
+        self.iteracje.setValue(1000)
+        
+        self.wartosc_progowa = algo_group.add_input(
+            "Wartość progowa:",
+            QSpinBox(),
+            "Minimalna wartość progowa"
+        )
+        self.wartosc_progowa.setValue(0)
+
+        # Probability Parameters Group
+        prob_group = InputGroup("Ustawienia prawdopodobieństwa")
+        self.mutacja = prob_group.add_input(
+            "Prawdopodobieństwo mutacji:",
+            SliderWithInput(0, 1),
+            "Prawdopodobieństwo wystąpienia mutacji"
+        )
+        self.mutacja.setValue(0.5)
+        
+        self.permutacja = prob_group.add_input(
+            "Prawdopodobieństwo permutacji:",
+            SliderWithInput(0, 1),
+            "Prawdopodobieństwo wystąpienia permutacji"
+        )
+        self.permutacja.setValue(0.5)
+
+        # Options Group
+        options_group = InputGroup("Dodatkowe opcje")
         self.dodawanie = QCheckBox("Losowe dodawanie")
-        self.dodawanie.setChecked(False)
-        
-        self.karanie = QCheckBox("Karanie")
+        self.karanie = QCheckBox("Włącz kary")
         self.karanie.setChecked(True)
-        
-        self.start_button = QPushButton("Start")
-        self.start_button.clicked.connect(self.start)
-                
-        input_wektor_layout.addWidget(wektor_label)
-        input_wektor_layout.addWidget(self.wektor_poczatkowy)
-        input_layout.addWidget(populacja_label)
-        input_layout.addWidget(self.populacja)
-        input_layout.addWidget(iteracje_label)
-        input_layout.addWidget(self.iteracje)
-        input_layout.addWidget(progowa_label)
-        input_layout.addWidget(self.wartosc_progowa)
-        input_layout.addWidget(mutacja_label)
-        input_layout.addWidget(self.mutacja)
-        input_layout.addWidget(permutacja_label)
-        input_layout.addWidget(self.permutacja)
-        input_layout2.addWidget(self.dodawanie)
-        input_layout2.addWidget(self.karanie)
-        input_layout2.addWidget(self.start_button)
-        main_layout.addLayout(input_wektor_layout)
-        main_layout.addLayout(input_layout)
-        main_layout.addLayout(input_layout2)
-        
-        output_layout = QHBoxLayout()
+        options_group.layout.addWidget(self.dodawanie)
+        options_group.layout.addWidget(self.karanie)
 
-        f_celu_label = QLabel("Funkcja celu najlepszego rozwiązania:")
+        # Add control button
+        self.start_button = QPushButton("Rozpocznij symulację")
+        self.start_button.clicked.connect(self.start)
+        self.start_button.setStyleSheet("padding: 10px;")
+        options_group.layout.addWidget(self.start_button)
+
+        # Add all input groups to the panel layout
+        input_panels_layout.addWidget(vector_group)
+        input_panels_layout.addWidget(algo_group)
+        input_panels_layout.addWidget(prob_group)
+        input_panels_layout.addWidget(options_group)
+        main_layout.addLayout(input_panels_layout)
+
+        # Results Group
+        results_group = QGroupBox("Wyniki")
+        results_layout = QGridLayout()
+        results_group.setLayout(results_layout)
+
+        # Add result fields
         self.f_celu = QLineEdit()
         self.f_celu.setReadOnly(True)
+        results_layout.addWidget(QLabel("Funkcja celu najlepszego rozwiązania:"), 0, 0)
+        results_layout.addWidget(self.f_celu, 0, 1)
 
-        rozw_label = QLabel("Najlepsze rozwiązanie:")
         self.rozw = QLineEdit()
         self.rozw.setReadOnly(True)
+        results_layout.addWidget(QLabel("Najlepsze rozwiązanie:"), 1, 0)
+        results_layout.addWidget(self.rozw, 1, 1)
 
+        main_layout.addWidget(results_group)
 
-        output_layout.addWidget(f_celu_label)
-        output_layout.addWidget(self.f_celu)
-        output_layout.addWidget(rozw_label)
-        output_layout.addWidget(self.rozw)
+        # Create plots layout
+        plots_widget = QWidget()
+        plots_layout = QHBoxLayout()
+        plots_widget.setLayout(plots_layout)
 
-        main_layout.addLayout(output_layout)
+        # Configure plot style
+        sns.set_style("whitegrid")
+        sns.set_palette("husl")
 
-        graph_layout = QHBoxLayout()
-
-        self.canvas1 = FigureCanvas(Figure(figsize=(5, 3)))
-        self.ax1 = self.canvas1.figure.add_subplot(111)
-        self.ax1.set_title("WYKRES PRZEBIEGU FUNKCJI CELU\n NAJLEPSZEGO ROZWIĄZANIA")
-        graph_layout.addWidget(self.canvas1)
-
-        self.canvas2 = FigureCanvas(Figure(figsize=(5, 3)))
-        self.ax2 = self.canvas2.figure.add_subplot(111)
-        self.ax2.set_title("WYKRES PRZEBIEGU FUNKCJI CELU\n NAJLEPSZEGO ROZWIĄZANIA W DANEJ ITERACJI")
-        graph_layout.addWidget(self.canvas2)
-
-        self.canvas3 = FigureCanvas(Figure(figsize=(5, 3)))
-        self.ax3 = self.canvas3.figure.add_subplot(111)
-        self.ax3.set_title("WYKRES NADMIARU")
-        graph_layout.addWidget(self.canvas3)
+        # Create plots with vertical arrangement
+        self.figures = []
+        self.canvases = []
+        self.axes = []
+        plot_titles = [
+            "PRZEBIEG FUNKCJI CELU NAJLEPSZEGO ROZWIĄZANIA",
+            "PRZEBIEG FUNKCJI CELU NAJLEPSZEGO ROZWIĄZANIA W DANEJ ITERACJI",
+            "WYKRES NADMIARU"
+        ]
         
-        main_layout.addLayout(graph_layout)
+        for title in plot_titles:
+            fig = Figure(figsize=(4, 16))
+            canvas = FigureCanvas(fig)
+            ax = fig.add_subplot(111)
+            ax.set_title(title)
+            
+            # Add to vertical layout
+            plots_layout.addWidget(canvas)
+            
+            self.figures.append(fig)
+            self.canvases.append(canvas)
+            self.axes.append(ax)
+
+        # Add plots to scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(plots_widget)
+        scroll_area.setWidgetResizable(True)
+        main_layout.addWidget(scroll_area)
+        
 
     def start(self):
-        wektor_poczatkowy = self.parse_list_input(self.wektor_poczatkowy.text().strip())
-        if len(wektor_poczatkowy) != 9:
-            raise ValueError("Zła długość")
-        
-        populacja = int(self.populacja.text())
-        iteracje = int(self.iteracje.text())
-        progowa = int(self.wartosc_progowa.text())
-        mutacja = float(self.mutacja.text())
-        permutacja = float(self.permutacja.text())
-        dodawanie = self.dodawanie.isChecked()
-        karanie = self.karanie.isChecked()
-        
-        n_vect_start, population0_solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania = przeprowadzenie_symulacji(wektor_poczatkowy=wektor_poczatkowy, rozmiar_populacji=populacja, liczba_iteracji=iteracje, wartosc_progowa=progowa, mut=mutacja, perm=permutacja, add=dodawanie, karanie=karanie)
-
-        self.update_output_values(przebieg_najlepszej_f_celu, population0_solution)
-        self.plot_graphs(przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, n_vect_start, dlugosc_rozwiazania)
-        
-    def plot_graphs(self, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, n_vect_start, dlugosc_rozwiazania):
         try:
-            self.ax1.clear()
-            self.ax2.clear()
-            self.ax3.clear()
+            wektor_poczatkowy = self.parse_list_input(self.wektor_poczatkowy.text().strip())
+            if len(wektor_poczatkowy) != 8:
+                raise ValueError("Wektor musi mieć dokładnie 8 elementów")
+            
+            params = {
+                'wektor_poczatkowy': wektor_poczatkowy,
+                'rozmiar_populacji': self.populacja.value(),
+                'liczba_iteracji': self.iteracje.value(),
+                'wartosc_progowa': self.wartosc_progowa.value(),
+                'mut': self.mutacja.value(),
+                'perm': self.permutacja.value(),
+                'add': self.dodawanie.isChecked(),
+                'karanie': self.karanie.isChecked()
+            }
+            
+            n_vect_start, population0_solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania = przeprowadzenie_symulacji(**params)
 
-            # Wykres 1
-            self.ax1.plot(range(len(przebieg_najlepszej_f_celu)), przebieg_najlepszej_f_celu)
-            #self.ax1.set_title(f"{n_vect_start}, rozwiązanie dł. {dlugosc_rozwiazania}")
-            self.ax1.set_title("WYKRES PRZEBIEGU FUNKCJI CELU\n NAJLEPSZEGO ROZWIĄZANIA")
-            self.ax1.set_xlabel("Iteracja")
-            self.ax1.set_ylabel("Wartość Funkcji celu")
-            self.ax1.legend()
-
-            # Wykres 2
-            self.ax2.plot(range(len(przebieg_f_celu)), przebieg_f_celu)
-            #self.ax2.set_title(f"{n_vect_start}, rozwiązanie dł. {dlugosc_rozwiazania}")
-            self.ax2.set_title("WYKRES PRZEBIEGU FUNKCJI CELU\n NAJLEPSZEGO ROZWIĄZANIA W DANEJ ITERACJI")
-            self.ax2.set_xlabel("Iteracja")
-            self.ax2.set_ylabel("Wartość Funkcji celu")
-            self.ax2.legend()
-
-            # Wykres 3
-            self.ax3.plot(range(len(przebieg_nadmiaru)), przebieg_nadmiaru)
-            #self.ax3.set_title(f"{n_vect_start}, rozwiązanie dł. {dlugosc_rozwiazania}")
-            self.ax3.set_title("WYKRES NADMIARU")
-            self.ax3.set_xlabel("Iteracja")
-            self.ax3.set_ylabel("Wartość nadmiaru")
-            self.ax3.legend()
-
-            # Refresh canvases
-            self.canvas1.draw()
-            self.canvas2.draw()
-            self.canvas3.draw()
+            self.update_output_values(przebieg_najlepszej_f_celu, population0_solution)
+            self.plot_graphs(przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru)
 
         except ValueError as e:
-            self.list_input.setText(f"Error: {str(e)}")
+            print(f"Błąd: {str(e)}")
+
+    def plot_graphs(self, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru):
+        plot_data = [
+            (przebieg_najlepszej_f_celu, "Iteracja", "Wartość funkcji celu"),
+            (przebieg_f_celu, "Iteracja", "Wartość funkcji celu"),
+            (przebieg_nadmiaru, "Iteracja", "Wartość nadmiaru")
+        ]
+
+        for ax, canvas, (data, xlabel, ylabel) in zip(self.axes, self.canvases, plot_data):
+            ax.clear()
+            
+            sns.lineplot(x=range(len(data)), y=data, ax=ax)
+            
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.grid(True, alpha=0.3)
+            
+            canvas.figure.tight_layout()
+            canvas.draw()
 
     def parse_list_input(self, list_input):
         try:
             return [float(num.strip()) for num in list_input.split(",") if num.strip()]
         except ValueError:
-            raise ValueError("Nieprawidłowe dane wejściowe, liczby muszą być oddzielone przecinkami")
+            raise ValueError("Nieprawidłowy format danych. Liczby muszą być oddzielone przecinkami.")
 
-    def update_output_values(self, a, b):
-        self.f_celu.setText(f"{min(a)}")
-        self.rozw.setText(f"{b}")
+    def update_output_values(self, objective_values, best_solution):
+        self.f_celu.setText(f"{min(objective_values)}")
+        self.rozw.setText(f"{best_solution}")
 
-# Run the application
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = GraphApp()
