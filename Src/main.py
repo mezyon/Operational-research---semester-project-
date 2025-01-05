@@ -127,11 +127,6 @@ class GraphApp(QMainWindow):
         self.populacja.setRange(10, 1000)
         self.populacja.setValue(50)
         
-        new_param = algo_group.add_input(
-        "New Parameter:",
-        QLineEdit(),
-        "Description of the parameter"
-        )
         
         self.iteracje = algo_group.add_input(
             "Liczba iteracji:",
@@ -169,8 +164,21 @@ class GraphApp(QMainWindow):
         self.dodawanie = QCheckBox("Losowe dodawanie")
         self.karanie = QCheckBox("Włącz kary")
         self.karanie.setChecked(True)
+        self.dummy = QCheckBox("Dummy")
+        self.dummy.setChecked(False)
+        self.dummy.setToolTip("""
+        <b>Parametr dummy – decyduje, w jaki sposób będą inicjowane poszczególne rozwiązania:</b> 
+        <ul>
+            <li>Jeśli dummy = 1, każde rozwiązanie będzie ”dummy”, tj. wszystkie elementy w
+            rozwiązaniu będą ustawione na 0. Tego typu rozwiązania są traktowane jako puste
+            lub domyślne.</li>
+            <li>Jeśli dummy = 0, każde rozwiązanie jest inicjowane losowo, dzięki czemu w populacji
+            będą znajdować się różnorodne rozwiązania.</li>
+        </ul>              
+        """)
         options_group.layout.addWidget(self.dodawanie)
         options_group.layout.addWidget(self.karanie)
+        options_group.layout.addWidget(self.dummy)
 
         # Add control button
         self.start_button = QPushButton("Rozpocznij symulację")
