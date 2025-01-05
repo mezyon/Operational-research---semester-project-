@@ -76,7 +76,7 @@ class GraphApp(QMainWindow):
         # Create a horizontal layout for input panels
         input_panels_layout = QHBoxLayout()
 
-        # Initial Vector Input Group
+        # == warunki początkowe ==
         vector_group = InputGroup("Warunki początkowe")
         self.wektor_poczatkowy = vector_group.add_input(
             "Wektor początkowy (8 elementów):",
@@ -92,7 +92,6 @@ class GraphApp(QMainWindow):
         self.random_wektor_checkbox.stateChanged.connect(
             lambda state: self.wektor_poczatkowy.setEnabled(not state)
         )
-        # TODO jedna uniwersalna funkcja?
         self.random_wektor_checkbox.stateChanged.connect(
             lambda state: self.random_wektor_min.setEnabled(state)
         )
@@ -101,7 +100,7 @@ class GraphApp(QMainWindow):
         )
         
         self.random_wektor_min = vector_group.add_input(
-            "Min",
+            "Minimalna wartość",
             QSpinBox()
         )
         
@@ -110,14 +109,14 @@ class GraphApp(QMainWindow):
         self.random_wektor_min.setEnabled(False)
         
         self.random_wektor_max = vector_group.add_input(
-            "Max",
+            "Maksymalna wartość",
             QSpinBox()
         )
         self.random_wektor_max.setRange(0,20)
         self.random_wektor_max.setValue(12)
         self.random_wektor_max.setEnabled(False)
 
-        # Algorithm Parameters Group
+        # == parametry algorytmu ==
         algo_group = InputGroup("Parametry algorytmu")
         self.populacja = algo_group.add_input(
             "Rozmiar populacji:",
@@ -131,7 +130,7 @@ class GraphApp(QMainWindow):
         self.iteracje = algo_group.add_input(
             "Liczba iteracji:",
             QSpinBox(),
-            "Liczba iteracji do wykonania"
+            "warunek stopu - jest to MAKSYMALNA liczba iteracji"
         )
         self.iteracje.setRange(100, 10000)
         self.iteracje.setValue(1000)
@@ -139,19 +138,24 @@ class GraphApp(QMainWindow):
         self.wartosc_progowa = algo_group.add_input(
             "Wartość progowa:",
             QSpinBox(),
-            "Minimalna wartość progowa"
+            "warunek stopu - domyślnie ustawiony na zero, czyli nieaktywny.\n Działa dopiero po pierwszych dwudziestu wykonanych iteracjach."
         )
         self.wartosc_progowa.setValue(0)
         
         self.dlugosc_rozwiazania = algo_group.add_input(
             "Długość rozwiązania:",
             QSpinBox(),
-            "Długość rozwiązania"
+            """
+            Ustala liczbę elementów, które składają się na każde rozwiązanie. 
+            Można narzucić tę długość, lecz w przypadku braku takiego działania,
+            algorytm dobiera ją samodzielnie w sposób umożliwiający opuszczenie skrzyżowania
+            przez niemal wszystkie auta.
+            """
         )
         self.dlugosc_rozwiazania.setValue(0)
         self.dlugosc_rozwiazania.setEnabled(False)
         
-        # Probability Parameters Group
+        # == ustawienia prawdopodobieństwa ==
         prob_group = InputGroup("Ustawienia prawdopodobieństwa")
         self.mutacja = prob_group.add_input(
             "Prawdopodobieństwo mutacji:",
@@ -211,7 +215,7 @@ class GraphApp(QMainWindow):
             transformation_group.add_input(name, combo, tooltip)
             self.combo_boxes[name] = combo
         
-        # Penalties Group
+        # == ustawienia kary ==
         penalty_group = InputGroup("Ustawienia kary")
         
         self.kara_a = penalty_group.add_input(
@@ -258,11 +262,19 @@ class GraphApp(QMainWindow):
         )
         self.kara_half.setValue(5)
         
-        # Options Group
+        # == Opcje == 
         options_group = InputGroup("Dodatkowe opcje")
         self.dodawanie = QCheckBox("Losowe dodawanie")
+        self.dodawanie.setToolTip("""do wybranej grupy najlepszych osobników dodawanych jest 
+        5 losowych rozwiązań – jeszcze przed przeprowadzeniem krzyżowania 
+        (aby wprowadzić więcej różnorodności).""")
         self.karanie = QCheckBox("Włącz kary")
+        self.karanie.setToolTip("""Włączenie kary – decyduje, czy funkcja celu będzie karana za brak zgodności.""")
         self.karanie.setChecked(True)
+        self.karanie.stateChanged.connect(
+            lambda state: self.kara_half.setEnabled(state))
+        self.karanie.stateChanged.connect(
+            lambda state: self.kara_full.setEnabled(state))
         self.dummy = QCheckBox("Dummy")
         self.dummy.setChecked(False)
         self.dummy.setToolTip("""
@@ -291,13 +303,13 @@ class GraphApp(QMainWindow):
         options_group.layout.addWidget(self.dummy)
         options_group.layout.addWidget(self.checkbox_dlugosc_rozwiazania)
 
-        # Add control button
+        # przycisk start
         self.start_button = QPushButton("Rozpocznij symulację")
         self.start_button.clicked.connect(self.start)
         self.start_button.setStyleSheet("padding: 10px;")
         options_group.layout.addWidget(self.start_button)
 
-        # Add all input groups to the panel layout
+        # dodanie grup do głównego layoutu
         input_panels_layout.addWidget(vector_group)
         input_panels_layout.addWidget(algo_group)
         input_panels_layout.addWidget(prob_group)
@@ -306,12 +318,12 @@ class GraphApp(QMainWindow):
         input_panels_layout.addWidget(options_group)
         main_layout.addLayout(input_panels_layout)
 
-        # Results Group
+        # == wyniki ==
         results_group = QGroupBox("Wyniki")
         results_layout = QGridLayout()
         results_group.setLayout(results_layout)
 
-        # Add result fields
+        # Dodanie pól do wyników
         self.f_celu = QLineEdit()
         self.f_celu.setReadOnly(True)
         results_layout.addWidget(QLabel("Funkcja celu najlepszego rozwiązania:"), 0, 0)
@@ -324,39 +336,35 @@ class GraphApp(QMainWindow):
 
         main_layout.addWidget(results_group)
 
-        # Create plots layout
+        # Wykresy
         plots_widget = QWidget()
         plots_layout = QHBoxLayout()
         plots_widget.setLayout(plots_layout)
 
-        # Configure plot style
         sns.set_style("whitegrid")
-        sns.set_palette("husl")
+        #sns.set_palette("husl")
 
-        # Create plots with vertical arrangement
         self.figures = []
         self.canvases = []
         self.axes = []
-        plot_titles = [
+        self.plot_titles = [
             "PRZEBIEG FUNKCJI CELU NAJLEPSZEGO ROZWIĄZANIA",
-            "PRZEBIEG FUNKCJI CELU NAJLEPSZEGO ROZWIĄZANIA W DANEJ ITERACJI",
+            "PRZEBIEG FUNKCJI CELU NAJLEPSZEGO ROZWIĄZANIA\n W DANEJ ITERACJI",
             "WYKRES NADMIARU"
         ]
         
-        for title in plot_titles:
+        for title in self.plot_titles:
             fig = Figure(figsize=(4, 16))
             canvas = FigureCanvas(fig)
             ax = fig.add_subplot(111)
             ax.set_title(title)
             
-            # Add to vertical layout
             plots_layout.addWidget(canvas)
             
             self.figures.append(fig)
             self.canvases.append(canvas)
             self.axes.append(ax)
 
-        # Add plots to scroll area
         scroll_area = QScrollArea()
         scroll_area.setWidget(plots_widget)
         scroll_area.setWidgetResizable(True)
@@ -367,6 +375,7 @@ class GraphApp(QMainWindow):
         try:
             wektor_poczatkowy = self.parse_list_input(self.wektor_poczatkowy.text().strip())
             if len(wektor_poczatkowy) != 8:
+                QMessageBox.warning(self, "Błąd", "Wektor musi mieć dokładnie 8 elementów")
                 raise ValueError("Wektor musi mieć dokładnie 8 elementów")
             
             crossing_road.base_glob = self.kara_base.value()
@@ -412,13 +421,14 @@ class GraphApp(QMainWindow):
             (przebieg_nadmiaru, "Iteracja", "Wartość nadmiaru")
         ]
 
-        for ax, canvas, (data, xlabel, ylabel) in zip(self.axes, self.canvases, plot_data):
+        for ax, canvas, (data, xlabel, ylabel), title in zip(self.axes, self.canvases, plot_data, self.plot_titles):
             ax.clear()
             
             sns.lineplot(x=range(len(data)), y=data, ax=ax)
             
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
+            ax.set_title(title)
             ax.grid(True, alpha=0.3)
             
             canvas.figure.tight_layout()
