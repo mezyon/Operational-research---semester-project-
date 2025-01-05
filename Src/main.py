@@ -86,8 +86,8 @@ class GraphApp(QMainWindow):
         
         # losowy wektor początkowy
         self.random_wektor_checkbox = vector_group.add_input(
-            "Losowy wektor początkowy",
-            QCheckBox("blokuj")
+            "Losowy wektor początkowy?",
+            QCheckBox()
         )
         self.random_wektor_checkbox.stateChanged.connect(
             lambda state: self.wektor_poczatkowy.setEnabled(not state)
@@ -96,20 +96,22 @@ class GraphApp(QMainWindow):
         self.random_wektor_checkbox.stateChanged.connect(
             lambda state: self.random_wektor_min.setEnabled(state)
         )
+        self.random_wektor_checkbox.stateChanged.connect(
+            lambda state: self.random_wektor_max.setEnabled(state)
+        )
         
         self.random_wektor_min = vector_group.add_input(
             "Min",
-            QSpinBox(),
-            "xx"
+            QSpinBox()
         )
+        
         self.random_wektor_min.setRange(0,20)
         self.random_wektor_min.setValue(4)
         self.random_wektor_min.setEnabled(False)
         
         self.random_wektor_max = vector_group.add_input(
             "Max",
-            QSpinBox(),
-            "xx"
+            QSpinBox()
         )
         self.random_wektor_max.setRange(0,20)
         self.random_wektor_max.setValue(12)
@@ -247,10 +249,12 @@ class GraphApp(QMainWindow):
                 raise ValueError("Wektor musi mieć dokładnie 8 elementów")
             
             params = {
-                'wektor_poczatkowy': wektor_poczatkowy,
+                'wektor_poczatkowy': wektor_poczatkowy if not self.random_wektor_checkbox.isChecked() else None,
                 'rozmiar_populacji': self.populacja.value(),
                 'liczba_iteracji': self.iteracje.value(),
                 'wartosc_progowa': self.wartosc_progowa.value(),
+                'a': self.random_wektor_min.value(),
+                'b': self.random_wektor_max.value(),
                 'mut': self.mutacja.value(),
                 'perm': self.permutacja.value(),
                 'add': self.dodawanie.isChecked(),
