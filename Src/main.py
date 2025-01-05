@@ -287,6 +287,7 @@ class GraphApp(QMainWindow):
                 'mut': self.mutacja.value(),
                 'perm': self.permutacja.value(),
                 'add': self.dodawanie.isChecked(),
+                'dummy': 1 if self.dummy.isChecked() else 0,
                 'karanie': self.karanie.isChecked()
             }
             
