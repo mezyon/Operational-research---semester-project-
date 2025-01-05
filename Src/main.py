@@ -166,7 +166,51 @@ class GraphApp(QMainWindow):
             "Prawdopodobieństwo wystąpienia permutacji"
         )
         self.permutacja.setValue(0.5)
+        
+        # Opcje transformacji
+        transformation_group = InputGroup("Opcje transformacji")
+        
+        # Definicje parametrów: (nazwa, tooltip)
+        parameter_definitions = [
+            ("Typy Mutacji", """
+            <ul>
+            <li><b>Typ 0:</b>
+            Zmiana jednej losowej wartości w rozwiązaniu na nową losową wartość (w zakresie
+            od 0 do 11, ponieważ tyle jest możliwych kombinacji sygnalizatorów).</li>
+            <li><b>Typ 1:</b>
+            Zmiana 1/4 losowych elementów w rozwiązaniu, które zostają przypisane do nowych
+            losowych wartości.</li>
+            """),
+            ("Typy permutacji", """
+            <ul>
+            <li><b>Typ 0:</b>
+            Losuje dwie liczby a, b i podmienia wartości na tych indeksach.</li>
+            <li><b>Typ 1:</b>
+            Losuje dwie liczby a, b i w tym zakresie odwraca kolejność.</li>
+            """),
+            ("Typy krzyżowania", """
+            <ul>
+            <li><b>Typ 0:</b>
+            Krzyżowanie jednopunktowe — rozwiązania są dzielone w losowym punkcie i wymieniane
+            częściami.</li>
+            <li><b>Typ 1:</b>
+            Krzyżowanie ”w kratkę” — w którym na przemian wybierane są elementy z dwóch
+            rozwiązań.</li>
+            """)
+        ]
 
+        self.combo_boxes = {}
+        
+        for name, tooltip in parameter_definitions:
+            combo = QComboBox()
+            combo.addItem("[0]")
+            combo.addItem("[1]")
+            combo.addItem("[0, 1]")
+            combo.setCurrentText("[0, 1]")
+                        
+            transformation_group.add_input(name, combo, tooltip)
+            self.combo_boxes[name] = combo
+        
         # Penalties Group
         penalty_group = InputGroup("Ustawienia kary")
         
@@ -257,6 +301,7 @@ class GraphApp(QMainWindow):
         input_panels_layout.addWidget(vector_group)
         input_panels_layout.addWidget(algo_group)
         input_panels_layout.addWidget(prob_group)
+        input_panels_layout.addWidget(transformation_group)
         input_panels_layout.addWidget(penalty_group)
         input_panels_layout.addWidget(options_group)
         main_layout.addLayout(input_panels_layout)
@@ -330,6 +375,10 @@ class GraphApp(QMainWindow):
             crossing_road.c_glob = self.kara_c.value()
             crossing_road.KARA_FULL = self.kara_full.value()
             crossing_road.KARA_HALF = self.kara_half.value()
+            
+            crossing_road.mut_opt = eval(self.combo_boxes["Typy Mutacji"].currentText())
+            crossing_road.perm_opt = eval(self.combo_boxes["Typy permutacji"].currentText())
+            crossing_road.cros_opt = eval(self.combo_boxes["Typy krzyżowania"].currentText())
             
             params = {
                 'wektor_poczatkowy': wektor_poczatkowy if not self.random_wektor_checkbox.isChecked() else None,
