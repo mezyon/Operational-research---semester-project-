@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 import seaborn as sns
 import sys
 
-from crossing_road import przeprowadzenie_symulacji
+import crossing_road
 
 class SliderWithInput(QWidget):
     def __init__(self, minimum, maximum, decimals=1):
@@ -64,7 +64,7 @@ class InputGroup(QGroupBox):
 class GraphApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Wizualizacja algorytmu genetycznego")
+        self.setWindowTitle("Aplikacja algorytmu genetycznego - światła na skrzyżowaniu")
         self.setGeometry(100, 100, 1800, 900)
 
         # Create main widget with scroll support
@@ -167,6 +167,53 @@ class GraphApp(QMainWindow):
         )
         self.permutacja.setValue(0.5)
 
+        # Penalties Group
+        penalty_group = InputGroup("Ustawienia kary")
+        
+        self.kara_a = penalty_group.add_input(
+            "Mnożnik kary (a): ",
+            QSpinBox(),
+            "współczynniki liniowy wpływu funkcji g"
+        )
+        self.kara_a.setValue(1)
+        
+        self.kara_b = penalty_group.add_input(
+            "Wykładnik kary (b): ",
+            QSpinBox(),
+            "współczynniki wykładniczy wpływu funkcji g"
+        )
+        self.kara_b.setValue(1)
+        
+        self.kara_c = penalty_group.add_input(
+            "Kara za pozostałe auta (c): ",
+            QSpinBox(),
+            """współczynnik zwiększenia funkcji celu w zależności od tego ile pojazdów pozostało na skrzyżowaniu po wykonaniu ostatniego kroku
+            - czyli suma pojazdów na wszystkich pasach po realizacji rozwiązania
+            - moment określony jako N^{−1}"""
+        )
+        self.kara_c.setValue(1)
+        
+        self.kara_base = penalty_group.add_input(
+            "Kara bazowa (d):",
+            QSpinBox(),
+            "Kara dodawana w każdym kroku"
+        )
+        self.kara_base.setValue(0)
+        
+        self.kara_full = penalty_group.add_input(
+            "Kara pełna:",
+            QSpinBox(),
+            "Kara za brak zgodności (ustaw wartość X według potrzeb)."
+        )
+        self.kara_full.setValue(10)
+        
+        self.kara_half = penalty_group.add_input(
+            "Kara częściwa:",
+            QSpinBox(),
+            "Kara za częściową zgodność (ustaw wartość Y według potrzeb)."
+        )
+        self.kara_half.setValue(5)
+        
         # Options Group
         options_group = InputGroup("Dodatkowe opcje")
         self.dodawanie = QCheckBox("Losowe dodawanie")
@@ -210,6 +257,7 @@ class GraphApp(QMainWindow):
         input_panels_layout.addWidget(vector_group)
         input_panels_layout.addWidget(algo_group)
         input_panels_layout.addWidget(prob_group)
+        input_panels_layout.addWidget(penalty_group)
         input_panels_layout.addWidget(options_group)
         main_layout.addLayout(input_panels_layout)
 
@@ -276,6 +324,13 @@ class GraphApp(QMainWindow):
             if len(wektor_poczatkowy) != 8:
                 raise ValueError("Wektor musi mieć dokładnie 8 elementów")
             
+            crossing_road.base_glob = self.kara_base.value()
+            crossing_road.a_glob = self.kara_a.value()
+            crossing_road.b_glob = self.kara_b.value()
+            crossing_road.c_glob = self.kara_c.value()
+            crossing_road.KARA_FULL = self.kara_full.value()
+            crossing_road.KARA_HALF = self.kara_half.value()
+            
             params = {
                 'wektor_poczatkowy': wektor_poczatkowy if not self.random_wektor_checkbox.isChecked() else None,
                 'dlugosc_rozwiazania': self.dlugosc_rozwiazania.value() if self.checkbox_dlugosc_rozwiazania.isChecked() else None,
@@ -291,7 +346,7 @@ class GraphApp(QMainWindow):
                 'karanie': self.karanie.isChecked()
             }
             
-            n_vect_start, population0_solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania = przeprowadzenie_symulacji(**params)
+            n_vect_start, population0_solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania = crossing_road.przeprowadzenie_symulacji(**params)
 
             self.update_output_values(przebieg_najlepszej_f_celu, population0_solution)
             self.plot_graphs(przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru)
