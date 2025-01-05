@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QComboBox, QRadioButton, QButtonGroup, QCheckBox, 
     QFrame, QGridLayout, QScrollArea, QGroupBox, QSpinBox, QDoubleSpinBox,
-    QSlider
+    QSlider, QMessageBox
 )
 from PySide6.QtCore import Qt
 from matplotlib.backends.backend_qtagg import FigureCanvas
@@ -265,6 +265,8 @@ class GraphApp(QMainWindow):
 
             self.update_output_values(przebieg_najlepszej_f_celu, population0_solution)
             self.plot_graphs(przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru)
+            
+            QMessageBox.information(self, "Sukces", "Wartość funkcji celu najlepszego rozwiązania: " + str(min(przebieg_najlepszej_f_celu)))
 
         except ValueError as e:
             print(f"Błąd: {str(e)}")
@@ -292,6 +294,7 @@ class GraphApp(QMainWindow):
         try:
             return [float(num.strip()) for num in list_input.split(",") if num.strip()]
         except ValueError:
+            QMessageBox.warning(self, "Błąd", "Nieprawidłowy format danych. Liczby muszą być oddzielone przecinkami.")
             raise ValueError("Nieprawidłowy format danych. Liczby muszą być oddzielone przecinkami.")
 
     def update_output_values(self, objective_values, best_solution):
