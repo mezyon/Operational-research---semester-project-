@@ -142,7 +142,15 @@ class GraphApp(QMainWindow):
             "Minimalna wartość progowa"
         )
         self.wartosc_progowa.setValue(0)
-
+        
+        self.dlugosc_rozwiazania = algo_group.add_input(
+            "Długość rozwiązania:",
+            QSpinBox(),
+            "Długość rozwiązania"
+        )
+        self.dlugosc_rozwiazania.setValue(0)
+        self.dlugosc_rozwiazania.setEnabled(False)
+        
         # Probability Parameters Group
         prob_group = InputGroup("Ustawienia prawdopodobieństwa")
         self.mutacja = prob_group.add_input(
@@ -176,9 +184,21 @@ class GraphApp(QMainWindow):
             będą znajdować się różnorodne rozwiązania.</li>
         </ul>              
         """)
+        self.checkbox_dlugosc_rozwiazania = QCheckBox("Długość rozwiązania")
+        self.checkbox_dlugosc_rozwiazania.setChecked(False)
+        self.checkbox_dlugosc_rozwiazania.stateChanged.connect(
+            lambda state: self.dlugosc_rozwiazania.setEnabled(state)
+        )
+        self.checkbox_dlugosc_rozwiazania.setToolTip("""
+        Długość rozwiązania (length) – ustala liczbę elementów, które składają się na każde
+        rozwiązanie. Można narzucić tę długość, lecz w przypadku braku takiego działania,
+        algorytm dobiera ją samodzielnie w sposób umożliwiający opuszczenie skrzyżowania
+        przez niemal wszystkie auta.                                             
+        """)
         options_group.layout.addWidget(self.dodawanie)
         options_group.layout.addWidget(self.karanie)
         options_group.layout.addWidget(self.dummy)
+        options_group.layout.addWidget(self.checkbox_dlugosc_rozwiazania)
 
         # Add control button
         self.start_button = QPushButton("Rozpocznij symulację")
@@ -258,6 +278,7 @@ class GraphApp(QMainWindow):
             
             params = {
                 'wektor_poczatkowy': wektor_poczatkowy if not self.random_wektor_checkbox.isChecked() else None,
+                'dlugosc_rozwiazania': self.dlugosc_rozwiazania.value() if self.checkbox_dlugosc_rozwiazania.isChecked() else None,
                 'rozmiar_populacji': self.populacja.value(),
                 'liczba_iteracji': self.iteracje.value(),
                 'wartosc_progowa': self.wartosc_progowa.value(),
