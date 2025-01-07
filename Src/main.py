@@ -86,7 +86,7 @@ class GraphApp(QMainWindow):
         
         # losowy wektor początkowy
         self.random_wektor_checkbox = vector_group.add_input(
-            "Losowy wektor początkowy?",
+            "Losowy wektor początkowy",
             QCheckBox()
         )
         self.random_wektor_checkbox.stateChanged.connect(
@@ -377,6 +377,9 @@ class GraphApp(QMainWindow):
             if len(wektor_poczatkowy) != 8:
                 QMessageBox.warning(self, "Błąd", "Wektor musi mieć dokładnie 8 elementów")
                 raise ValueError("Wektor musi mieć dokładnie 8 elementów")
+            if self.random_wektor_min.value() > self.random_wektor_max.value():
+                QMessageBox.warning(self, "Błąd", "Wartość minimalna wektora początkowego nie może być większa od wartości maksymalnej")
+                raise ValueError("Wartość minimalna wektora początkowego nie może być większa od wartości maksymalnej")
             
             crossing_road.base_glob = self.kara_base.value()
             crossing_road.a_glob = self.kara_a.value()
@@ -406,7 +409,7 @@ class GraphApp(QMainWindow):
             
             n_vect_start, population0_solution, przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru, dlugosc_rozwiazania = crossing_road.przeprowadzenie_symulacji(**params)
 
-            self.update_output_values(przebieg_najlepszej_f_celu, population0_solution)
+            self.update_output_values(przebieg_najlepszej_f_celu, population0_solution, n_vect_start)
             self.plot_graphs(przebieg_najlepszej_f_celu, przebieg_f_celu, przebieg_nadmiaru)
             
             QMessageBox.information(self, "Sukces", "Wartość funkcji celu najlepszego rozwiązania: " + str(min(przebieg_najlepszej_f_celu)))
@@ -441,9 +444,10 @@ class GraphApp(QMainWindow):
             QMessageBox.warning(self, "Błąd", "Nieprawidłowy format danych. Liczby muszą być oddzielone przecinkami.")
             raise ValueError("Nieprawidłowy format danych. Liczby muszą być oddzielone przecinkami.")
 
-    def update_output_values(self, objective_values, best_solution):
+    def update_output_values(self, objective_values, best_solution, start_vector):
         self.f_celu.setText(f"{min(objective_values)}")
         self.rozw.setText(f"{best_solution}")
+        self.wektor_poczatkowy.setText(", ".join(str(x) for x in start_vector))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
