@@ -104,7 +104,7 @@ class GraphApp(QMainWindow):
             QSpinBox()
         )
         
-        self.random_wektor_min.setRange(0,20)
+        #self.random_wektor_min.setRange(0,20)
         self.random_wektor_min.setValue(4)
         self.random_wektor_min.setEnabled(False)
         
@@ -112,7 +112,7 @@ class GraphApp(QMainWindow):
             "Maksymalna wartość",
             QSpinBox()
         )
-        self.random_wektor_max.setRange(0,20)
+        #self.random_wektor_max.setRange(0,20)
         self.random_wektor_max.setValue(12)
         self.random_wektor_max.setEnabled(False)
 
@@ -220,47 +220,59 @@ class GraphApp(QMainWindow):
         
         self.kara_a = penalty_group.add_input(
             "Mnożnik kary (a): ",
-            QSpinBox(),
+            QDoubleSpinBox(),
             "współczynniki liniowy wpływu funkcji g"
         )
         self.kara_a.setValue(1)
+        self.kara_a.setDecimals(1)
+        self.kara_a.setSingleStep(0.1)
         
         self.kara_b = penalty_group.add_input(
             "Wykładnik kary (b): ",
-            QSpinBox(),
+            QDoubleSpinBox(),
             "współczynniki wykładniczy wpływu funkcji g"
         )
         self.kara_b.setValue(1)
+        self.kara_b.setDecimals(1)
+        self.kara_b.setSingleStep(0.1)
         
         self.kara_c = penalty_group.add_input(
             "Kara za pozostałe auta (c): ",
-            QSpinBox(),
+            QDoubleSpinBox(),
             """współczynnik zwiększenia funkcji celu w zależności od tego ile pojazdów pozostało na skrzyżowaniu po wykonaniu ostatniego kroku
             - czyli suma pojazdów na wszystkich pasach po realizacji rozwiązania
             - moment określony jako N^{−1}"""
         )
         self.kara_c.setValue(1)
+        self.kara_c.setDecimals(1)
+        self.kara_c.setSingleStep(0.1)
         
         self.kara_base = penalty_group.add_input(
             "Kara bazowa (d):",
-            QSpinBox(),
+            QDoubleSpinBox(),
             "Kara dodawana w każdym kroku"
         )
         self.kara_base.setValue(0)
+        self.kara_base.setDecimals(1)
+        self.kara_base.setSingleStep(0.1)
         
         self.kara_full = penalty_group.add_input(
             "Kara pełna:",
-            QSpinBox(),
+            QDoubleSpinBox(),
             "Kara za brak zgodności (ustaw wartość X według potrzeb)."
         )
         self.kara_full.setValue(10)
+        self.kara_full.setDecimals(1)
+        self.kara_full.setSingleStep(0.1)
         
         self.kara_half = penalty_group.add_input(
             "Kara częściwa:",
-            QSpinBox(),
+            QDoubleSpinBox(),
             "Kara za częściową zgodność (ustaw wartość Y według potrzeb)."
         )
         self.kara_half.setValue(5)
+        self.kara_half.setDecimals(1)
+        self.kara_half.setSingleStep(0.1)
         
         # == Opcje == 
         options_group = InputGroup("Dodatkowe opcje")
